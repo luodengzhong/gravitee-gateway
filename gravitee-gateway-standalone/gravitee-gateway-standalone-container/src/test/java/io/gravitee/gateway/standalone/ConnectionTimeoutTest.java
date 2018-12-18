@@ -15,9 +15,7 @@
  */
 package io.gravitee.gateway.standalone;
 
-import io.gravitee.gateway.standalone.junit.annotation.ApiConfiguration;
 import io.gravitee.gateway.standalone.junit.annotation.ApiDescriptor;
-import io.gravitee.gateway.standalone.servlet.TeamServlet;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.fluent.Request;
@@ -33,9 +31,6 @@ import static org.junit.Assert.assertTrue;
 @ApiDescriptor(
         value = "/io/gravitee/gateway/standalone/connect-timeout.json",
         enhanceHttpPort = false)
-@ApiConfiguration(
-        servlet = TeamServlet.class,
-        contextPath = "/team")
 public class ConnectionTimeoutTest extends AbstractGatewayTest {
 
     @Test

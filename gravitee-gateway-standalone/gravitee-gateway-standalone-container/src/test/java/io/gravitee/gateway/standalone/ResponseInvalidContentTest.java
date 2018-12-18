@@ -15,8 +15,12 @@
  */
 package io.gravitee.gateway.standalone;
 
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import io.gravitee.definition.model.Endpoint;
+import io.gravitee.gateway.handlers.api.definition.Api;
 import io.gravitee.gateway.standalone.junit.annotation.ApiConfiguration;
 import io.gravitee.gateway.standalone.junit.annotation.ApiDescriptor;
+import io.gravitee.gateway.standalone.junit.rules.ApiDeployer;
 import io.gravitee.gateway.standalone.policy.PolicyBuilder;
 import io.gravitee.gateway.standalone.policy.ValidateResponsePolicy;
 import io.gravitee.gateway.standalone.servlet.EchoServlet;
@@ -25,8 +29,16 @@ import io.gravitee.plugin.policy.PolicyPlugin;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
+import java.net.URL;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -39,8 +51,19 @@ import static org.junit.Assert.assertEquals;
         contextPath = "/echo")
 public class ResponseInvalidContentTest extends AbstractGatewayTest {
 
+    private WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
+    @Rule
+    public final TestRule chain = RuleChain
+            .outerRule(wireMockRule)
+            .around(new ApiDeployer(this));
+
     @Test
     public void call_validate_response_content() throws Exception {
+        stubFor(post(urlEqualTo("/echo/helloworld"))
+                .willReturn(aResponse()
+                        .withStatus(HttpStatus.SC_OK)));
+
         org.apache.http.client.fluent.Request request = org.apache.http.client.fluent.Request.Post("http://localhost:8082/echo/helloworld");
         request.bodyString("My request content", ContentType.TEXT_PLAIN);
 
@@ -48,6 +71,23 @@ public class ResponseInvalidContentTest extends AbstractGatewayTest {
         HttpResponse returnResponse = response.returnResponse();
 
         assertEquals(HttpStatus.SC_BAD_REQUEST, returnResponse.getStatusLine().getStatusCode());
+
+        // Check that the stub has never been invoked by the gateway
+        verify(1, postRequestedFor(urlEqualTo("/echo/helloworld")));
+    }
+
+    @Override
+    public void before(Api api) {
+        super.before(api);
+
+        try {
+            Endpoint edpt = api.getProxy().getGroups().iterator().next().getEndpoints().iterator().next();
+            URL target = new URL(edpt.getTarget());
+            URL newTarget = new URL(target.getProtocol(), target.getHost(), wireMockRule.port(), target.getFile());
+            edpt.setTarget(newTarget.toString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     @Override

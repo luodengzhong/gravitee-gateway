@@ -92,7 +92,7 @@ public class ApiDeployerStatement extends Statement {
         Api api = new GraviteeMapper().readValue(jsonFile, Api.class);
 
         if (api.getProxy().getGroups() == null || api.getProxy().getGroups().isEmpty()) {
-            // Createa default endpoint group
+            // Create a default endpoint group
             EndpointGroup group = new EndpointGroup();
             group.setName("default");
             group.setEndpoints(Collections.emptySet());

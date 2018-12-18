@@ -15,19 +15,28 @@
  */
 package io.gravitee.gateway.standalone;
 
-import io.gravitee.gateway.standalone.junit.annotation.ApiConfiguration;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import io.gravitee.definition.model.Endpoint;
+import io.gravitee.gateway.handlers.api.definition.Api;
 import io.gravitee.gateway.standalone.junit.annotation.ApiDescriptor;
+import io.gravitee.gateway.standalone.junit.rules.ApiDeployer;
 import io.gravitee.gateway.standalone.policy.OverrideRequestContentPolicy;
 import io.gravitee.gateway.standalone.policy.PolicyBuilder;
-import io.gravitee.gateway.standalone.servlet.EchoServlet;
 import io.gravitee.gateway.standalone.utils.StringUtils;
 import io.gravitee.plugin.core.api.ConfigurablePluginManager;
 import io.gravitee.plugin.policy.PolicyPlugin;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
 
+import java.net.URL;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -35,13 +44,21 @@ import static org.junit.Assert.assertEquals;
  * @author GraviteeSource Team
  */
 @ApiDescriptor(value = "/io/gravitee/gateway/standalone/override-request-content.json")
-@ApiConfiguration(
-        servlet = EchoServlet.class,
-        contextPath = "/echo")
 public class OverrideRequestContentGatewayTest extends AbstractGatewayTest {
+
+    private WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
+    @Rule
+    public final TestRule chain = RuleChain
+            .outerRule(wireMockRule)
+            .around(new ApiDeployer(this));
 
     @Test
     public void call_override_request_content() throws Exception {
+        stubFor(post(urlEqualTo("/echo/helloworld"))
+                .willReturn(aResponse()
+                        .withStatus(HttpStatus.SC_OK)));
+
         org.apache.http.client.fluent.Request request = org.apache.http.client.fluent.Request.Post("http://localhost:8082/echo/helloworld");
         request.bodyString("Request content overriden by policy", ContentType.TEXT_PLAIN);
 
@@ -52,6 +69,24 @@ public class OverrideRequestContentGatewayTest extends AbstractGatewayTest {
 
         String responseContent = StringUtils.copy(returnResponse.getEntity().getContent());
         assertEquals(OverrideRequestContentPolicy.STREAM_POLICY_CONTENT, responseContent);
+
+        // Check that the stub has never been invoked by the gateway
+        verify(1, postRequestedFor(urlEqualTo("/echo/helloworld"))
+                .withRequestBody(equalTo(OverrideRequestContentPolicy.STREAM_POLICY_CONTENT)));
+    }
+
+    @Override
+    public void before(Api api) {
+        super.before(api);
+
+        try {
+            Endpoint edpt = api.getProxy().getGroups().iterator().next().getEndpoints().iterator().next();
+            URL target = new URL(edpt.getTarget());
+            URL newTarget = new URL(target.getProtocol(), target.getHost(), wireMockRule.port(), target.getFile());
+            edpt.setTarget(newTarget.toString());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
     }
 
     @Override

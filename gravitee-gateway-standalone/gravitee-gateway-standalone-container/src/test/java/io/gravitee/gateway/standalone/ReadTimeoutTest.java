@@ -17,7 +17,6 @@ package io.gravitee.gateway.standalone;
 
 import io.gravitee.gateway.standalone.junit.annotation.ApiConfiguration;
 import io.gravitee.gateway.standalone.junit.annotation.ApiDescriptor;
-import io.gravitee.gateway.standalone.servlet.TeamServlet;
 import io.gravitee.gateway.standalone.servlet.TimeoutServlet;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -28,7 +27,7 @@ import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 /**
- * @author David BRASSELY (brasseld at gmail.com)
+ * @author David BRASSELY (david.brassely at graviteesource.com)
  * @author GraviteeSource Team
  */
 @ApiDescriptor("/io/gravitee/gateway/standalone/read-timeout.json")

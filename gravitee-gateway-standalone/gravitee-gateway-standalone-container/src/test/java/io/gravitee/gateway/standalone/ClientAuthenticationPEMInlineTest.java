@@ -44,10 +44,6 @@ import static org.junit.Assert.assertEquals;
  * @author GraviteeSource Team
  */
 @ApiDescriptor("/io/gravitee/gateway/standalone/client-authentication-pem-inline-support.json")
-@ApiConfiguration(
-        servlet = TeamServlet.class,
-        contextPath = "/team"
-)
 public class ClientAuthenticationPEMInlineTest extends AbstractGatewayTest {
 
     // PKCS12 has been generated from SSLJKSTrustStoreTest
@@ -69,7 +65,6 @@ public class ClientAuthenticationPEMInlineTest extends AbstractGatewayTest {
 
     @Rule
     public final TestRule chain = RuleChain
-            .outerRule(new ApiPublisher())
             .outerRule(wireMockRule)
             .around(new ApiDeployer(this));
 

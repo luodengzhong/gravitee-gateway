@@ -20,11 +20,8 @@ import io.gravitee.definition.model.Endpoint;
 import io.gravitee.definition.model.endpoint.HttpEndpoint;
 import io.gravitee.definition.model.ssl.pem.PEMTrustStore;
 import io.gravitee.gateway.handlers.api.definition.Api;
-import io.gravitee.gateway.standalone.junit.annotation.ApiConfiguration;
 import io.gravitee.gateway.standalone.junit.annotation.ApiDescriptor;
 import io.gravitee.gateway.standalone.junit.rules.ApiDeployer;
-import io.gravitee.gateway.standalone.junit.rules.ApiPublisher;
-import io.gravitee.gateway.standalone.servlet.TeamServlet;
 import io.gravitee.gateway.standalone.wiremock.ResourceUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -46,10 +43,6 @@ import static org.junit.Assert.assertEquals;
  * @author GraviteeSource Team
  */
 @ApiDescriptor("/io/gravitee/gateway/standalone/ssl-pem-support.json")
-@ApiConfiguration(
-        servlet = TeamServlet.class,
-        contextPath = "/team"
-)
 public class SSLPEMTrustStoreTest extends AbstractGatewayTest {
 
     // P12 has been generated from SSLPKCS12TrustStoreTest
@@ -66,7 +59,6 @@ public class SSLPEMTrustStoreTest extends AbstractGatewayTest {
 
     @Rule
     public final TestRule chain = RuleChain
-            .outerRule(new ApiPublisher())
             .outerRule(wireMockRule)
             .around(new ApiDeployer(this));
 
